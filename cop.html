@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Colador de Texto Confiável</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        #textBox {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+        #pasteButton {
+            padding: 10px 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f8f8;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h2>Cole seu texto aqui:</h2>
+    <textarea id="textBox" placeholder="O texto colado aparecerá aqui..."></textarea>
+    <button id="pasteButton">Colar Texto</button>
+    <div id="status"></div>
+
+    <script>
+        document.getElementById('pasteButton').addEventListener('click', async () => {
+            const textBox = document.getElementById('textBox');
+            const status = document.getElementById('status');
+            
+            try {
+                // Método moderno (requer permissão)
+                const text = await navigator.clipboard.readText();
+                textBox.value = text;
+                showStatus('Texto colado com sucesso!', 'success');
+            } catch (error) {
+                // Método alternativo (funciona na maioria dos navegadores)
+                textBox.focus();
+                try {
+                    document.execCommand('paste');
+                    showStatus('Texto colado!', 'success');
+                } catch (err) {
+                    showStatus('Erro: Permita o acesso à área de transferência', 'error');
+                    console.error("Erro ao colar:", err);
+                }
+            }
+        });
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.display = 'block';
+            status.style.color = type === 'success' ? 'green' : 'red';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
