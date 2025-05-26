@@ -73,7 +73,8 @@
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
-            margin-bottom: 20px;
+            margin-bottom: 10px; /* Reduzido de 20px para 10px */
+            padding: 0 10px; /* Adicionado padding para alinhar com o conteúdo */
         }
 
         .category-tab {
@@ -98,6 +99,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 20px;
+            padding: 0 10px; /* Adicionado padding para alinhar com as categorias */
         }
         
         .product-card {
@@ -166,7 +168,7 @@
 
         .initial-message {
             text-align: center;
-            padding: 40px;
+            padding: 20px 40px; /* Reduzido o padding vertical de 40px para 20px */
             color: #666;
             margin: 0;
             font-size: 16px;
@@ -211,6 +213,21 @@
         .footer-link:hover {
             color: #b71c1c;
         }
+
+        /* Novo estilo para a logo */
+        .img-logo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .img-logo img {
+            max-width: 300px;
+            width: 100%;
+            height: auto;
+        }
     </style>
 </head>
 <body>
@@ -233,7 +250,7 @@
             <div class="initial-message">Selecione uma categoria para visualizar os produtos</div>
         </div>
         <div class="img-logo">
-            <img src="imagens/logo2.png" alt="Logo Toca da Pizza" style="width: 100%; max-width: 300px; margin: 0 auto; display: block;">
+            <img src="imagens/logo2.png" alt="Logo Toca da Pizza">
         </div>
 
     <!-- Rodapé fixo com ícones -->
