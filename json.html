@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cardápio Digital - Consumindo API do Google Sheets</title>
+    <title>Toca da Pizza - Cardápio Digital</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -15,6 +17,7 @@
         body {
             background-color: #f5f5f5;
             padding: 20px;
+            padding-bottom: 80px; /* Espaço para o rodapé fixo */
         }
         
         .container {
@@ -22,12 +25,15 @@
             margin: 0 auto;
         }
         
-        h1 {
+        .header {
+            background-color: #d32f2f;
+            color: white;
+            padding: 20px;
             text-align: center;
+            border-radius: 8px;
             margin-bottom: 20px;
-            color: #333;
         }
-        
+            
         .search-container {
             display: flex;
             margin-bottom: 20px;
@@ -44,7 +50,7 @@
         
         #search-button {
             padding: 10px 20px;
-            background-color: #4285f4;
+            background-color: #d32f2f;
             color: white;
             border: none;
             border-radius: 4px;
@@ -53,7 +59,32 @@
         }
         
         #search-button:hover {
-            background-color: #3367d6;
+            background-color: #b71c1c;
+        }
+
+        .categories-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .category-tab {
+            padding: 8px 16px;
+            background-color: #f1f1f1;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .category-tab:hover {
+            background-color: #ddd;
+        }
+
+        .category-tab.active {
+            background-color: #d32f2f;
+            color: white;
         }
         
         .products-grid {
@@ -110,7 +141,7 @@
         .product-price {
             font-size: 18px;
             font-weight: bold;
-            color: #4285f4;
+            color: #e67e22;
         }
         
         .loading {
@@ -125,32 +156,125 @@
             text-align: center;
             padding: 20px;
         }
+
+        .initial-message {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* Estilos do rodapé fixo */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: white;
+            padding: 10px 0;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .footer-nav {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+        
+        .footer-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #d32f2f;
+            font-size: 12px;
+        }
+        
+        .footer-link i {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .footer-link span {
+            font-size: 12px;
+        }
+        
+        .footer-link:hover {
+            color: #b71c1c;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Cardápio Digital</h1>
+        <div class="header">
+            <h1>Toca da Pizza</h1>
+            <p>Aprecie os sabores da Toca.</p>
+        </div>
         
         <div class="search-container">
             <input type="text" id="search-input" placeholder="Pesquisar produtos...">
             <button id="search-button">Buscar</button>
         </div>
+
+        <div class="categories-tabs" id="categories-tabs">
+            <!-- As abas de categorias serão geradas dinamicamente pelo JavaScript -->
+        </div>
         
         <div id="products-container">
-            <div class="loading">Carregando produtos...</div>
+            <div class="initial-message">Selecione uma categoria para visualizar os produtos</div>
         </div>
     </div>
+
+    <!-- Rodapé fixo com ícones -->
+    <footer class="footer">
+        <nav class="footer-nav">
+            <a href="#" class="footer-link">
+                <i class="fas fa-house"></i>
+                <span>Início</span>
+            </a>
+            
+            <a href="#" class="footer-link">
+                <i class="fab fa-instagram"></i>
+                <span>Instagram</span>
+            </a>
+            
+            <a href="#" class="footer-link">
+                <i class="fas fa-circle-info"></i>
+                <span>Sobre</span>
+            </a>
+            
+            <a href="#" class="footer-link">
+                <i class="fas fa-cart-shopping"></i>
+                <span>Carrinho</span>
+            </a>
+        </nav>
+    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('search-input');
             const searchButton = document.getElementById('search-button');
             const productsContainer = document.getElementById('products-container');
+            const categoriesTabs = document.getElementById('categories-tabs');
             
-            // URL da sua API do Google Apps Script
+            // URL da API do Google Apps Script
             const API_URL = 'https://script.google.com/macros/s/AKfycbwwF3LAQNibUen9klBXMaJcMYOdyyZHUJlbzhao3VF8CXLeeSkJShlD9SBc9MNfCAEb/exec';
             
             let allProducts = [];
+            let categories = [];
+            let currentCategory = null;
+            
+            // Função para formatar o preço
+            function formatPrice(price) {
+                if (!price) return '--';
+                
+                // Converte para número
+                const number = typeof price === 'string' ? parseFloat(price.replace(',', '.')) : price;
+                
+                // Formata com 2 casas decimais e substitui ponto por vírgula
+                return number.toFixed(2).replace('.', ',');
+            }
             
             // Função para carregar os produtos da API
             function loadProducts() {
@@ -160,12 +284,54 @@
                     .then(response => response.json())
                     .then(data => {
                         allProducts = data.produtos;
-                        displayProducts(allProducts);
+                        
+                        // Extrai categorias únicas
+                        categories = [...new Set(allProducts.map(product => product.categoria))];
+                        categories.sort();
+                        
+                        // Cria as abas de categorias
+                        createCategoryTabs();
+                        
+                        // Mostra mensagem inicial
+                        productsContainer.innerHTML = '<div class="initial-message">Selecione uma categoria para visualizar os produtos</div>';
                     })
                     .catch(error => {
                         console.error('Erro ao carregar produtos:', error);
                         productsContainer.innerHTML = '<div class="error">Erro ao carregar os produtos. Por favor, tente novamente mais tarde.</div>';
                     });
+            }
+            
+            // Função para criar as abas de categorias
+            function createCategoryTabs() {
+                categoriesTabs.innerHTML = '';
+                
+                categories.forEach(category => {
+                    const tab = document.createElement('div');
+                    tab.className = 'category-tab';
+                    tab.textContent = category;
+                    tab.dataset.category = category;
+                    
+                    tab.addEventListener('click', function() {
+                        // Se clicar na mesma categoria, desmarca
+                        if (currentCategory === category) {
+                            this.classList.remove('active');
+                            currentCategory = null;
+                            productsContainer.innerHTML = '<div class="initial-message">Selecione uma categoria para visualizar os produtos</div>';
+                            return;
+                        }
+                        
+                        // Remove a classe active de todas as abas
+                        document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                        // Adiciona a classe active apenas na aba clicada
+                        this.classList.add('active');
+                        
+                        currentCategory = category;
+                        const filteredProducts = allProducts.filter(product => product.categoria === category);
+                        displayProducts(filteredProducts);
+                    });
+                    
+                    categoriesTabs.appendChild(tab);
+                });
             }
             
             // Função para exibir produtos
@@ -189,7 +355,7 @@
                             <h3 class="product-name">${product.produto}</h3>
                             <span class="product-category">${product.categoria}</span>
                             <p class="product-description">${product.descricao}</p>
-                            <div class="product-price">R$ ${product.valor || '--'}</div>
+                            <div class="product-price">R$ ${formatPrice(product.valor)}</div>
                         </div>
                     `;
                     
@@ -199,15 +365,22 @@
                 productsContainer.appendChild(productsGrid);
             }
             
-            // Função para pesquisar produtos
+            // Função para pesquisar produtos (busca em todos os produtos)
             function searchProducts() {
                 const searchTerm = searchInput.value.toLowerCase();
                 
                 if (!searchTerm) {
-                    displayProducts(allProducts);
+                    // Se não houver termo de busca, volta ao estado da categoria selecionada (se houver)
+                    if (currentCategory) {
+                        const filteredProducts = allProducts.filter(product => product.categoria === currentCategory);
+                        displayProducts(filteredProducts);
+                    } else {
+                        productsContainer.innerHTML = '<div class="initial-message">Selecione uma categoria para visualizar os produtos</div>';
+                    }
                     return;
                 }
                 
+                // Busca em TODOS os produtos, independente da categoria selecionada
                 const filteredProducts = allProducts.filter(product => {
                     return (
                         product.produto.toLowerCase().includes(searchTerm) ||
