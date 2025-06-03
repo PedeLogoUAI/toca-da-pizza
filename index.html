@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toca da Pizza - Cardápio Digital</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="js-css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-title-container">
+                <img src="imagens/logo.png" alt="Logo Toca da Pizza" class="header-logo">
+                <h1>Toca da Pizza</h1>
+            </div>
+            <p>Aprecie os sabores da Toca.</p>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Pesquisar produtos...">
+        </div>
+
+        <div class="categories-tabs" id="categories-tabs"></div>
+        
+        <div id="products-container">
+            <div class="initial-message">Selecione uma categoria para visualizar os produtos</div>
+        </div>
+        
+        <div class="img-logo">
+            <img src="imagens/logo.png" alt="Logo Toca da Pizza" loading="lazy">
+        </div>
+
+        <div class="floating-cart" id="floating-cart">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="floating-cart-count" id="floating-cart-count">0</span>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <nav class="footer-nav">
+            <a href="#" class="footer-link" id="home-link">
+                <i class="fas fa-house"></i>
+                <span>Início</span>
+            </a>
+            <a href="tel:+5531999999999" class="footer-link">
+                <i class="fas fa-phone"></i>
+                <span>Ligar</span>
+            </a>
+            <a href="https://wa.me/5531999999999" class="footer-link">
+                <i class="fab fa-whatsapp"></i>
+                <span>WhatsApp</span>
+            </a>
+            <a href="https://www.instagram.com/toca_da_pizza_mg" class="footer-link">
+                <i class="fab fa-instagram"></i>
+                <span>Instagram</span>
+            </a>
+        </nav>
+    </footer>
+
+    <div class="modal" id="confirmation-modal">
+        <div class="modal-content">
+            <h3>Item adicionado ao carrinho!</h3>
+            <p id="modal-message"></p>
+            <div class="modal-actions">
+                <button class="modal-btn modal-cancel" id="continue-shopping">Continuar comprando</button>
+                <button class="modal-btn modal-confirm" id="go-to-cart">Ir para o carrinho</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="pizza-modal">
+        <div class="modal-content">
+            <h3>Pizza de 2 sabores?</h3>
+            <p>Você adicionou:</p>
+            <ul id="pizza-modal-items"></ul>
+            <p>Você está montando uma pizza de 2 sabores?</p>
+            <div class="modal-actions">
+                <button class="modal-btn modal-cancel" id="pizza-no">Não, quero 2 pizzas</button>
+                <button class="modal-btn modal-confirm" id="pizza-yes">Sim, quero 1 pizza meio a meio</button>
+            </div>
+        </div>
+    </div>
+   <script src="js-css/script.js"></script>
+</body>
+</html>
