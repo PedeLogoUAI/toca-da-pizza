@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let carrinho = JSON.parse(localStorage.getItem('carrinho')) || []; // Carrinho salvo no localStorage
     let ultimasPizzasAdicionadas = []; // Armazena as últimas pizzas adicionadas para combo
 
-    // Variável importante: define como será calculado o preço do combo "meio a meio"
+    // Variável importante: define como será calculado o preço da pizza "meio a meio"
     // - 'metade': soma metade do valor de cada pizza
     // - 'maior': usa o valor da pizza mais cara
     const PRECO_PIZZA_MEIO_A_MEIO = 'metade'; // ✅ Escreva aqui: 'metade' ou 'maior'
