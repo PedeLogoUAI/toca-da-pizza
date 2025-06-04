@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const product = allProducts.find(p => p.id == productId);
         if (!product) return;
 
-        // Se for pizza, armazena temporariamente para verificar se é combo
+        // Se for pizza, armazena temporariamente para verificar se é de 2 sabores.
         if (product.categoria.toLowerCase().includes('pizza')) {
             ultimasPizzasAdicionadas.push({
                 id: product.id,
@@ -166,7 +166,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (ultimasPizzasAdicionadas.length === 2) {
-                showPizzaModal(); // Mostra modal de confirmação de combo
+                showPizzaModal(); // Mostra modal de confirmação pizza de 2 sabores.
                 return;
             }
         } else {
