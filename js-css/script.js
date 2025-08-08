@@ -1,7 +1,5 @@
-// === PARTE 1: CONFIGURAÇÕES INICIAIS E FUNÇÕES BÁSICAS ===
-
 document.addEventListener('DOMContentLoaded', function () {
-    // ELEMENTOS DO DOM
+    // Elementos do DOM
     const searchInput = document.getElementById('search-input');
     const productsContainer = document.getElementById('products-container');
     const categoriesTabs = document.getElementById('categories-tabs');
@@ -13,29 +11,25 @@ document.addEventListener('DOMContentLoaded', function () {
     const floatingCart = document.getElementById('floating-cart');
     const floatingCartCount = document.getElementById('floating-cart-count');
 
-    // URL DA API EXTERNA PARA BUSCAR OS PRODUTOS
-    const API_URL = 'https://script.google.com/macros/s/AKfycbwU0J8BjZPTRSxOdQUQMY00e2LzzFv7Rr88uY0BagqMIbdStjwEHC_lhKHg1uZjiV4h/exec'; 
+    // URL da API
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwU0J8BjZPTRSxOdQUQMY00e2LzzFv7Rr88uY0BagqMIbdStjwEHC_lhKHg1uZjiV4h/exec';
 
-    // VARIÁVEIS GLOBAIS DO SISTEMA
-    let allProducts = []; // Armazena todos os produtos carregados da API
-    let categories = []; // Lista das categorias disponíveis
-    let currentCategory = null; // Categoria atualmente selecionada
-    let carrinho = JSON.parse(localStorage.getItem('carrinho')) || []; // Carrinho salvo no localStorage
-    let ultimasPizzasAdicionadas = []; // Armazena as últimas pizzas adicionadas para combo
+    // Variáveis globais
+    let allProducts = [];
+    let categories = [];
+    let currentCategory = null;
+    let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+    let ultimasPizzasAdicionadas = [];
+    let esperandoSegundoSabor = false;
+    const PRECO_PIZZA_MEIO_A_MEIO = 'metade';
 
-    // Variável importante: define como será calculado o preço da pizza "meio a meio"
-    // - 'metade': soma metade do valor de cada pizza
-    // - 'maior': usa o valor da pizza mais cara
-    const PRECO_PIZZA_MEIO_A_MEIO = 'metade'; // ✅ Escreva aqui: 'metade' ou 'maior'
-
-    // FUNÇÃO: formata números como moeda brasileira (R$ 0,00)
+    // Funções básicas
     function formatPrice(price) {
         if (!price) return '--';
         const number = typeof price === 'string' ? parseFloat(price.replace(',', '.')) : price;
         return number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    // FUNÇÃO: evita chamadas excessivas de uma função (útil para eventos como digitação)
     function debounce(func, timeout = 300) {
         let timer;
         return (...args) => {
@@ -43,8 +37,8 @@ document.addEventListener('DOMContentLoaded', function () {
             timer = setTimeout(() => { func.apply(this, args); }, timeout);
         };
     }
-    
-        // FUNÇÃO: carrega os produtos da API e inicializa os elementos da página
+
+    // Carregar produtos
     function loadProducts() {
         productsContainer.innerHTML = `
             <div class="loading">
@@ -71,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // FUNÇÃO: cria abas de categorias dinamicamente com base nos produtos carregados
+    // Categorias
     function createCategoryTabs() {
         categoriesTabs.innerHTML = '';
         const allTab = document.createElement('div');
@@ -108,12 +102,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // FUNÇÃO: exibe mensagem inicial pedindo ao usuário que selecione uma categoria
     function showInitialMessage() {
         productsContainer.innerHTML = '<div class="initial-message">Selecione uma categoria para visualizar os produtos</div>';
     }
 
-    // FUNÇÃO: renderiza os produtos no container principal
+    // Exibir produtos
     function displayProducts(products) {
         if (products.length === 0) {
             productsContainer.innerHTML = '<div class="error">Nenhum produto encontrado.</div>';
@@ -126,6 +119,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const productInCart = carrinho.find(item => item.id === product.id);
             const buttonText = productInCart ? `${productInCart.quantity} no carrinho` : 'Adicionar';
             const buttonClass = productInCart ? 'add-to-cart-button in-cart' : 'add-to-cart-button';
+            const isWaitingForCombo = esperandoSegundoSabor && product.categoria.toLowerCase().includes('pizza');
+            const comboClass = isWaitingForCombo ? ' waiting-combo' : '';
+            
             const productCard = document.createElement('div');
             productCard.className = 'product-card';
             productCard.innerHTML = `
@@ -136,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <p class="product-description">${product.descricao}</p>
                     <div class="product-price-container">
                         <div class="product-price">R$ ${formatPrice(product.valor)}</div>
-                        <button class="${buttonClass}" data-id="${product.id}">${buttonText}</button>
+                        <button class="${buttonClass}${comboClass}" data-id="${product.id}">${buttonText}</button>
                     </div>
                 </div>
             `;
@@ -151,32 +147,42 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // FUNÇÃO: adiciona um produto ao carrinho
+    // Carrinho - Funções principais
     function addToCart(productId) {
         const product = allProducts.find(p => p.id == productId);
         if (!product) return;
 
-        // Se for pizza, armazena temporariamente para verificar se é de 2 sabores.
         if (product.categoria.toLowerCase().includes('pizza')) {
-            ultimasPizzasAdicionadas.push({
-                id: product.id,
-                name: product.produto,
-                price: product.valor,
-                image: product.imagem
-            });
-
-            if (ultimasPizzasAdicionadas.length === 2) {
-                showPizzaModal(); // Mostra modal de confirmação pizza de 2 sabores.
+            if (esperandoSegundoSabor) {
+                ultimasPizzasAdicionadas.push({
+                    id: product.id,
+                    name: product.produto,
+                    price: product.valor,
+                    image: product.imagem
+                });
+                
+                if (ultimasPizzasAdicionadas.length === 2) {
+                    addComboPizza();
+                    return;
+                }
+            } else {
+                ultimasPizzasAdicionadas = [{
+                    id: product.id,
+                    name: product.produto,
+                    price: product.valor,
+                    image: product.imagem
+                }];
+                showPizzaModal(true);
                 return;
             }
         } else {
-            ultimasPizzasAdicionadas = []; // Reseta se não for pizza
+            ultimasPizzasAdicionadas = [];
+            esperandoSegundoSabor = false;
         }
 
         addItemToCart(product);
     }
 
-    // FUNÇÃO: adiciona o produto ao carrinho definitivamente
     function addItemToCart(product) {
         const existingItem = carrinho.find(item => item.id == product.id);
         if (existingItem) {
@@ -200,67 +206,33 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // FUNÇÃO: mostra modal de confirmação para combinar duas pizzas
-    function showPizzaModal() {
-        const modal = document.getElementById('pizza-modal');
-        const itemsList = document.getElementById('pizza-modal-items');
-        itemsList.innerHTML = ultimasPizzasAdicionadas.map(pizza =>
-            `<li>${pizza.name}</li>`
-        ).join('');
-        modal.style.display = 'flex';
+    function addComboPizza() {
+        const pizza1 = ultimasPizzasAdicionadas[0];
+        const pizza2 = ultimasPizzasAdicionadas[1];
+        let price;
 
-        document.getElementById('pizza-no').onclick = function () {
-            ultimasPizzasAdicionadas.forEach(pizza => {
-                const product = allProducts.find(p => p.id == pizza.id);
-                if (product) addItemToCart(product);
-            });
-            modal.style.display = 'none';
-            ultimasPizzasAdicionadas = [];
-        };
+        if (PRECO_PIZZA_MEIO_A_MEIO === 'metade') {
+            price = (parseFloat(pizza1.price) / 2 + parseFloat(pizza2.price) / 2);
+        } else {
+            price = Math.max(parseFloat(pizza1.price), parseFloat(pizza2.price));
+        }
 
-        document.getElementById('pizza-yes').onclick = function () {
-            ultimasPizzasAdicionadas.forEach(pizza => {
-                carrinho = carrinho.filter(item => item.id != pizza.id);
-            });
+        carrinho = carrinho.filter(item => item.id != pizza1.id && item.id != pizza2.id);
 
-            const pizza1 = ultimasPizzasAdicionadas[0];
-            const pizza2 = ultimasPizzasAdicionadas[1];
-            let price;
+        carrinho.push({
+            id: `combo-${Date.now()}`,
+            name: `Pizza meio a meio: ${pizza1.name} / ${pizza2.name}`,
+            price: price,
+            quantity: 1,
+            image: pizza1.image
+        });
 
-            // Aqui usa-se a constante PRECO_PIZZA_MEIO_A_MEIO para calcular o preço
-            if (PRECO_PIZZA_MEIO_A_MEIO === 'metade') {
-                price = (parseFloat(pizza1.price) / 2 + parseFloat(pizza2.price) / 2);
-            } else {
-                price = Math.max(parseFloat(pizza1.price), parseFloat(pizza2.price));
-            }
-
-            carrinho.push({
-                id: `combo-${Date.now()}`,
-                name: `Pizza meio a meio: ${pizza1.name} / ${pizza2.name}`,
-                price: price,
-                quantity: 1,
-                image: pizza1.image
-            });
-
-            saveCart();
-            updateCartIcon();
-            showConfirmationModal(`Pizza meio a meio: ${pizza1.name} / ${pizza2.name}`);
-            modal.style.display = 'none';
-            ultimasPizzasAdicionadas = [];
-
-            if (currentCategory) {
-                const filteredProducts = allProducts.filter(p => p.categoria === currentCategory);
-                displayProducts(filteredProducts);
-            }
-        };
-    }
-    
-        // FUNÇÃO: remove um item do carrinho
-    function removeFromCart(productId) {
-        carrinho = carrinho.filter(item => item.id != productId);
         saveCart();
         updateCartIcon();
-        showCart();
+        showConfirmationModal(`Pizza meio a meio: ${pizza1.name} / ${pizza2.name}`);
+        
+        ultimasPizzasAdicionadas = [];
+        esperandoSegundoSabor = false;
 
         if (currentCategory) {
             const filteredProducts = allProducts.filter(p => p.categoria === currentCategory);
@@ -268,7 +240,79 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // FUNÇÃO: atualiza a quantidade de um item no carrinho
+    function showPizzaModal(isFirstPizza = false) {
+        const modal = document.getElementById('pizza-modal');
+        const itemsList = document.getElementById('pizza-modal-items');
+        
+        if (isFirstPizza) {
+            const pizza = ultimasPizzasAdicionadas[0];
+            itemsList.innerHTML = `<li>${pizza.name}</li>`;
+            
+            document.querySelector('#pizza-modal h3').textContent = 'Montar pizza de 2 sabores?';
+            document.querySelector('#pizza-modal p:nth-of-type(1)').textContent = 'Você selecionou:';
+            document.querySelector('#pizza-modal p:nth-of-type(2)').textContent = 'Deseja adicionar um segundo sabor para montar uma pizza meio a meio?';
+            
+            document.getElementById('pizza-no').textContent = 'Não, quero apenas este sabor';
+            document.getElementById('pizza-yes').textContent = 'Sim, quero adicionar outro sabor';
+        } else {
+            itemsList.innerHTML = ultimasPizzasAdicionadas.map(pizza =>
+                `<li>${pizza.name}</li>`
+            ).join('');
+        }
+        
+        modal.style.display = 'flex';
+
+        document.getElementById('pizza-no').onclick = function () {
+            if (isFirstPizza) {
+                const product = allProducts.find(p => p.id == ultimasPizzasAdicionadas[0].id);
+                if (product) addItemToCart(product);
+            } else {
+                ultimasPizzasAdicionadas.forEach(pizza => {
+                    const product = allProducts.find(p => p.id == pizza.id);
+                    if (product) addItemToCart(product);
+                });
+            }
+            modal.style.display = 'none';
+            ultimasPizzasAdicionadas = [];
+            esperandoSegundoSabor = false;
+        };
+
+        document.getElementById('pizza-yes').onclick = function () {
+            if (isFirstPizza) {
+                esperandoSegundoSabor = true;
+                if (currentCategory) {
+                    const filteredProducts = allProducts.filter(p => p.categoria === currentCategory);
+                    displayProducts(filteredProducts);
+                } else {
+                    displayProducts(allProducts);
+                }
+            } else {
+                addComboPizza();
+            }
+            modal.style.display = 'none';
+        };
+    }
+
+    // Outras funções do carrinho
+    function removeFromCart(productId) {
+        const itemRemovido = carrinho.find(item => item.id == productId);
+        carrinho = carrinho.filter(item => item.id != productId);
+        saveCart();
+        updateCartIcon();
+        
+        // Adiciona feedback visual
+        const cartContainer = document.querySelector('.cart-container');
+        if (cartContainer && itemRemovido) {
+            cartContainer.insertAdjacentHTML('afterbegin', `
+                <div class="removal-feedback">
+                    ${itemRemovido.name} removido(a) do carrinho!
+                </div>
+            `);
+        }
+        
+        showCart();
+    }
+
     function updateQuantity(productId, newQuantity) {
         const item = carrinho.find(item => item.id == productId);
         if (item) {
@@ -279,12 +323,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // FUNÇÃO: salva o carrinho no localStorage
     function saveCart() {
         localStorage.setItem('carrinho', JSON.stringify(carrinho));
     }
 
-    // FUNÇÃO: atualiza o ícone do carrinho flutuante com a quantidade de itens
     function updateCartIcon() {
         const totalItems = carrinho.reduce((total, item) => total + item.quantity, 0);
         if (floatingCartCount) {
@@ -297,7 +339,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // FUNÇÃO: exibe a tela do carrinho
     function showCart() {
         if (carrinho.length === 0) {
             productsContainer.innerHTML = `
@@ -408,13 +449,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // FUNÇÃO: exibe uma mensagem de confirmação quando um item é adicionado ao carrinho
     function showConfirmationModal(productName) {
         modalMessage.textContent = `${productName} foi adicionado ao seu carrinho.`;
         modal.style.display = 'flex';
     }
 
-    // FUNÇÃO: filtra os produtos conforme o texto digitado no campo de busca
     function searchProducts() {
         const searchTerm = searchInput.value.toLowerCase().trim();
         if (!searchTerm) {
@@ -436,7 +475,7 @@ document.addEventListener('DOMContentLoaded', function () {
         displayProducts(filteredProducts);
     }
 
-    // EVENTOS PRINCIPAIS
+    // Event listeners
     searchInput.addEventListener('input', debounce(searchProducts));
     searchInput.addEventListener('keyup', function (e) {
         if (e.key === 'Enter') searchProducts();
@@ -480,9 +519,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (product) addItemToCart(product);
             });
             ultimasPizzasAdicionadas = [];
+            esperandoSegundoSabor = false;
         }
     });
 
-    // INICIALIZAÇÃO: carrega os produtos ao abrir a página
+    // Inicialização
     loadProducts();
 });
